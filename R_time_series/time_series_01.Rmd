@@ -1,0 +1,172 @@
+---
+title: "assignment01"
+author: "Minji Kwak"
+date: '2021 4 2 '
+output: html_document
+---
+
+### openfile
+```{r}
+library(readxl)
+data = read_excel('C:/myR/class/insurance.xlsx')
+str(data)
+```
+
+```{r}
+ins <- as.data.frame(data$insurance)
+str(ins)
+```
+
+### 문제 1.
+
+```{r}
+ins.ts = ts(ins, start=c(1990, 1), frequency = 4)
+str(ins.ts)
+```
+
+```{r}
+ad = decompose(x=ins.ts, type="additive")
+str(ad)
+```
+
+```{r}
+plot(ad, col=4, lwd=2)
+```
+
+### 문제 2.
+
+```{r}
+mult = decompose(x=ins.ts, type = "multiplicative")
+str(mult)
+```
+```{r}
+plot(mult, col=4, lwd=2)
+```
+
+
+### 문제 3.
+
+```{r}
+ins1.ts = ts(ins, start=c(1990, 1), frequency=1)
+ins1.ts
+```
+
+```{r}
+plot.ts(ins1.ts, lwd=2, col=4, xlab="연도", ylab="Insurance")
+```
+
+```{r}
+library(forecast)
+library(ggplot2)
+ma3 = ma(ins1.ts, order=3)
+ma5 = ma(ins1.ts, order=5)
+ma7 = ma(ins1.ts, order=7)
+ma9 = ma(ins1.ts, order=9)
+
+ins1.ts3 = cbind(ins1.ts, ma3)
+ins1.ts5 = cbind(ins1.ts, ma5)
+ins1.ts7 = cbind(ins1.ts, ma7)
+ins1.ts9 = cbind(ins1.ts, ma9)
+
+par(mfrow=c(2,2))
+ts.plot(ins1.ts3, lwd=c(2,2), lty=c(1,1), col=c(1,2), main="3-MA", xlab="연도", ylab="Insurance")
+legend("topleft", lty=c(1,1), col=c(1,2), cex=0.5, c("data", "3-MA"))
+
+ts.plot(ins1.ts5, lwd=c(2,2), lty=c(1,1), col=c(1,2), main="5-MA", xlab="연도", ylab="Insurance")
+legend("topleft", lty=c(1,1), col=c(1,2), cex=0.5, c("data", "5-MA"))
+
+ts.plot(ins1.ts7, lwd=c(2,2), lty=c(1,1), col=c(1,2), main="7-MA", xlab="연도", ylab="Insurance")
+legend("topleft", lty=c(1,1), col=c(1,2), cex=0.5, c("data", "7-MA"))
+
+ts.plot(ins1.ts9, lwd=c(2,2), lty=c(1,1), col=c(1,2), main="9-MA", xlab="연도", ylab="Insurance")
+legend("topleft", lty=c(1,1), col=c(1,2), cex=0.5, c("data", "9-MA"))
+
+```
+
+### 문제 4.
+##### (1)
+
+```{r}
+fc <- ses(ins1.ts, h=6)
+fc
+```
+
+```{r}
+library(ggplot2)
+autoplot(fc) + autolayer(fitted(fc), series="적합값") + ylab("Insurance") + xlab("연도") + ggtitle("단순 지수평활로 얻은 예측값")
+```
+
+##### (2)
+
+```{r}
+round(accuracy(fc), 2)
+```
+
+### 문제 5.
+##### (1)
+
+```{r}
+HW_additi = HoltWinters(ins1.ts, gamma=FALSE, seasonal="additi")
+HW_additi
+```
+
+```{r}
+str(HW_additi)
+HW_additi$SSE
+```
+
+```{r}
+plot(HW_additi, col=4, lwd=2)
+legend("topleft", c("Observed", "Fitted"), col=c(4,2), lwd=2)
+```
+
+```{r}
+library(forecast)
+f = forecast(HW_additi, h=6)
+f
+```
+
+```{r}
+plot(f, col=4, )
+legend("topleft", c("Observed", "Fitted"), col=c(1,4), lwd=1:2)
+```
+
+
+
+##### (2)
+
+```{r}
+HW_mult = HoltWinters(ins1.ts, gamma=FALSE, seasonal="mult")
+HW_mult
+```
+
+```{r}
+str(HW_mult)
+HW_mult$SSE
+```
+
+```{r}
+plot(HW_mult, col=4, lwd=2)
+legend("topleft", c("Observed", "Fitted"), col=c(4,2), lwd=2)
+```
+
+```{r}
+f_mult = forecast(HW_mult, h=6)
+f_mult
+```
+
+```{r}
+plot(f_mult, col=1, lwd=2)
+legend("topleft", c("Observed", "Fitted"), col=c(1,4), lwd=1:2)
+```
+
+
+### 문제 6.
+```{r}
+accuracy(fc)                       # 단순지수 평활법
+accuracy(forecast(HW_additi, h=6)) # Holt-Winter's 가법모형 
+accuracy(forecast(HW_mult, h=6))   # Holt-Winter's 승법모형 
+```
+##### 즉, 단순지수 평활법보다는 Holt-Winter's 모형의 성능이 더 좋다.
+##### 또한 Holt-Winter's 가법모형과 승법모형의 성능은 같은 것으로 보인다.
+##### 결론적으로, 가장 최적의 예측모형은 Holt-Winter's 모형이다.
